@@ -1,0 +1,61 @@
+---
+title: "Assignment 5- ARIMA"
+author: "Kayla Lindsley"
+date: "2025-04-05"
+output: html_document
+---
+
+```{r}
+library(fpp)
+library(fpp2)
+library(forecast)
+
+unemployment_rate_data <- read.csv("/Users/kaylalindsley/Desktop/Junior\ Yr/Semester\ 2/Time\ Series/Assignment\ 5/unemployment_rate_data\ copy.csv", header = TRUE)
+
+# converting unemployment_rate_data$unrate into time series model(monthly)
+date <- as.Date(unemployment_rate_data$date, format = "%m/%d/%Y")
+ts_unrate <- ts(unemployment_rate_data$unrate, start = c(1948, 01), frequency = 12)
+
+plot(ts_unrate)
+
+unrate_window <- window(ts_unrate, start=c(2020,4))
+
+#1 ARIMA
+plot(unrate_window)
+ndiffs(unrate_window)
+tsdisplay(unrate_window)
+unratetimeseriesdiff2 <- diff(unrate_window, differences=2)
+plot(unratetimeseriesdiff2)
+tsdisplay(unratetimeseriesdiff2)
+auto_fit <- auto.arima(unrate_window, trace=TRUE, stepwise = FALSE)
+auto_fit
+#Seasonal Data 
+plot(unrate_window)
+nsdiffs(unrate_window) #<-- doing seasonal diff removes seasonality from non seasonality
+ndiffs(unrate_window)
+ndiffs((diff(unrate_window,12))) #<-- 12 bc monthly data 
+tsdisplay(diff(diff(unrate_window,12)))
+fit3 <- auto.arima(unrate_window,trace=TRUE, stepwise = FALSE )
+fit3
+# plotting
+plot(unrate_window)
+lines(fit3$fitted, col="red")
+#Explanation: I limited the data from April 2020onwards because there is a large increase in the unemployment rate due to Covid during that time. The ARIMA derived from that data is (1, 2, 0). This means that the time series for the Unemployment data uses lag 1 and predicting based on its immediate preceding value. We can also gather that the data had 2 differences taken in order to make the data stationary and remove seasonality and that the model does not include any moving average terms. The errors are uncorrelated across time and forecasts are based on past value of the time series and differencing.  
+
+#2 Residual Analysis
+Acf(auto_fit$residuals)
+Box.test(residuals(auto_fit), lag=20, type="Ljung")
+plot.ts(residuals(auto_fit))
+hist(auto_fit$residuals)
+tsdiag(auto_fit)
+
+#3 Forecast
+attributes(auto_fit)
+forecast_window <- forecast(auto_fit,h=5)
+plot(forecast_window)
+
+#4 Accuracy 
+accuracy(forecast_window)
+
+
+
